@@ -9,6 +9,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func HealthCheck(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Health OK",
+	})
+}
+
 func CreateShortURL(c *fiber.Ctx) error {
 	var url models.URL
 	if err := c.BodyParser(&url); err != nil || url.OriginalURL == "" {
@@ -25,24 +31,27 @@ func CreateShortURL(c *fiber.Ctx) error {
 
 	url.OriginalURL = services.EnforceHTTP(url.OriginalURL)
 
-	if services.CheckDomain(url.OriginalURL) {
+	if !services.CheckDomain(url.OriginalURL) {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Cannot shorten this URL",
+			"error": "Cannot shorten this URL as DOMAIN matches URL",
 		})
 	}
 
-	// check if we already have a shortURL for this originalURL
-	if shortURL, _ := services.CheckURLExists(url.OriginalURL, url.CustomURL); shortURL != "" {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"message":   "Short URL for given URL already exists",
-			"short URL": shortURL,
-		})
-	}
 	// need to check if entered customURL already redirects to some original URL
 	if url.CustomURL != "" && services.IsURLTaken(url.CustomURL) {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"message": "Specfied custom URL already in use",
 		})
+	}
+
+	// check if we already have a shortURL for this originalURL
+	if url.CustomURL == "" {
+		if shortURL, _ := services.CheckURLExists(url.OriginalURL); shortURL != "" {
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"message":   "Short URL for given URL already exists",
+				"short URL": shortURL,
+			})
+		}
 	}
 
 	shortURL, err := services.GenerateAndStoreURL(url.OriginalURL, url.CustomURL)
@@ -61,6 +70,7 @@ func CreateShortURL(c *fiber.Ctx) error {
 }
 
 func RedirectURL(c *fiber.Ctx) error {
+
 	shortURL := c.Params("shortURL")
 
 	originalURL, err := services.GetOriginalURL(shortURL)
