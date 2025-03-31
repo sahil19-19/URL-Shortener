@@ -1,9 +1,15 @@
 package routes
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"url-shortener/controllers"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 func SetupRoutes(app *fiber.App) {
-	app.Post("/shorten")
-	app.Get("/:shorturl")
-	
+	app.Get("/api/health", controllers.HealthCheck)
+
+	app.Post("/api/shorten", controllers.CreateShortURL)
+
+	app.Get("/api/:shorturl", controllers.RedirectURL)
 }

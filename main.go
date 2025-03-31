@@ -15,12 +15,13 @@ func main() {
 
 	routes.SetupRoutes(app)
 
-	log.Println("Server is running on port 8080")
 	PORT := os.Getenv("PORT")
 
 	if PORT == "" {
-		PORT = ":3000"
+		PORT = ":5000"
 	}
+
+	log.Println("Server is running on port:", PORT)
 
 	log.Fatal(app.Listen(PORT))
 }
