@@ -1,7 +1,87 @@
 package controllers
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"database/sql"
+	"url-shortener/models"
+	"url-shortener/services"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/gofiber/fiber/v2"
+)
 
 func CreateShortURL(c *fiber.Ctx) error {
+	var url models.URL
+	if err := c.BodyParser(&url); err != nil || url.OriginalURL == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid input",
+		})
+	}
 
+	if !govalidator.IsURL(url.OriginalURL) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid URL",
+		})
+	}
+
+	url.OriginalURL = services.EnforceHTTP(url.OriginalURL)
+
+	if services.CheckDomain(url.OriginalURL) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Cannot shorten this URL",
+		})
+	}
+
+	// check if we already have a shortURL for this originalURL
+	if shortURL, _ := services.CheckURLExists(url.OriginalURL, url.CustomURL); shortURL != "" {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"message":   "Short URL for given URL already exists",
+			"short URL": shortURL,
+		})
+	}
+	// need to check if entered customURL already redirects to some original URL
+	if url.CustomURL != "" && services.IsURLTaken(url.CustomURL) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Specfied custom URL already in use",
+		})
+	}
+
+	shortURL, err := services.GenerateAndStoreURL(url.OriginalURL, url.CustomURL)
+	// shortURL, err = services.
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "could not generate url",
+			"error":   err,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":   "short URL generated",
+		"short URL": shortURL,
+	})
+}
+
+func RedirectURL(c *fiber.Ctx) error {
+	shortURL := c.Params("shortURL")
+
+	originalURL, err := services.GetOriginalURL(shortURL)
+
+	if err == sql.ErrNoRows {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "URL not found",
+			"error":   err,
+		})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Error fetching original URL",
+			"error":   err,
+		})
+	}
+
+	// return c.Status(fiber.StatusOK).JSON(fiber.Map{
+	// 	"message":      "URL fetched successfully",
+	// 	"Original URL": originalURL,
+	// })
+	return c.Redirect(originalURL, 301) // permanent redirect
 }
