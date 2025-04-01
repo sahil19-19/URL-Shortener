@@ -9,7 +9,7 @@ import (
 	"url-shortener/db"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 // generates a random short url
 func GenerateShortURL(length int) string {

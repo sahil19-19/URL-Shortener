@@ -12,9 +12,12 @@ import (
 )
 
 func InitDB() *sql.DB {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading env variables")
+	if os.Getenv("RENDER") == "" {
+		// means it is being run in local
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading env variables")
+		}
 	}
 
 	USER := os.Getenv("DB_USER")

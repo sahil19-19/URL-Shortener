@@ -11,9 +11,12 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading env variables")
+	if os.Getenv("RENDER") == "" {
+		// means it is being run in local
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading env variables")
+		}
 	}
 
 	app := fiber.New()
