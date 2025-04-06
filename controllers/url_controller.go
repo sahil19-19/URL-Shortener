@@ -25,7 +25,19 @@ func CreateShortURL(c *fiber.Ctx) error {
 
 	if !govalidator.IsURL(url.OriginalURL) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid URL",
+			"message": "Invalid URL",
+		})
+	}
+
+	errCode := services.CheckSpecialCharacter(url.CustomURL)
+	if errCode != 3 {
+		if errCode == 1 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Custom URL cannot be longer than 10 digits",
+			})
+		}
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "No special characters in custom URL are allowed",
 		})
 	}
 
@@ -33,7 +45,7 @@ func CreateShortURL(c *fiber.Ctx) error {
 
 	if !services.CheckDomain(url.OriginalURL) {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Cannot shorten this URL as DOMAIN matches URL",
+			"message": "Cannot shorten this URL as DOMAIN matches URL",
 		})
 	}
 
@@ -49,10 +61,12 @@ func CreateShortURL(c *fiber.Ctx) error {
 		if shortURL, _ := services.CheckURLExists(url.OriginalURL); shortURL != "" {
 			return c.Status(fiber.StatusOK).JSON(fiber.Map{
 				"message":   "Short URL for given URL already exists",
-				"short URL": shortURL,
+				"short_url": shortURL,
 			})
 		}
 	}
+
+	// check if customURL doesnt contain special characters or if it is longer than 10 digits
 
 	shortURL, err := services.GenerateAndStoreURL(url.OriginalURL, url.CustomURL)
 	// shortURL, err = services.
@@ -65,7 +79,7 @@ func CreateShortURL(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message":   "short URL generated",
-		"short URL": shortURL,
+		"short_url": shortURL,
 	})
 }
 

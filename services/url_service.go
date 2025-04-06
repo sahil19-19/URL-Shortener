@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
 	"time"
 	"url-shortener/db"
 )
@@ -108,4 +109,15 @@ func GetOriginalURL(shortURL string) (string, error) {
 		return "", err
 	}
 	return originalURL, nil
+}
+
+func CheckSpecialCharacter(url string) int8 {
+	if len(url) > 10 {
+		return 1
+	}
+	match, _ := regexp.MatchString(`^[a-zA-Z0-9]*$`, url)
+	if !match {
+		return 2
+	}
+	return 3
 }
