@@ -2,7 +2,6 @@ package services
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"math/rand"
 	"regexp"
@@ -72,7 +71,6 @@ func IsURLTaken(url string) bool {
 }
 
 func CheckURLExists(originalURL string) (string, error) {
-	fmt.Println("inside CheckURLexists")
 	db := db.InitDB()
 	defer db.Close()
 
